@@ -6,7 +6,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "antd": "^5.4.0",
     "date-fns": "^2.29.3",
+    "dayjs": "^1.11.7",
     "gray-matter": "^4.0.3",
     "next": "latest",
     "react": "18.2.0",

@@ -40,43 +40,35 @@ export default function Layout({
           console.log(`script loaded correctly, window.FB has been populated`)
         }
       />
-      <header className={styles.header}>
+      <header className={styles.headerContainer}>
         {home ? (
           <>
-            <Image
-              priority
-              src="/images/me.jpg"
-              className={utilStyles.borderCircle}
-              height={144}
-              width={144}
-              alt={name}
-            />
-            <h1 className={utilStyles.heading2Xl}>{name}</h1>
-          </>
-        ) : (
-          <>
-            <Link href="/">
+            <div className={styles.header}>
               <Image
                 priority
                 src="/images/me.jpg"
-                className={utilStyles.borderCircle}
-                height={108}
-                width={108}
+                className={utilStyles.borderSquare}
+                height={144}
+                width={144}
                 alt={name}
               />
-            </Link>
-            <h2 className={utilStyles.headingLg}>
-              <Link href="/" className={utilStyles.colorInherit}>
-                {name}
-              </Link>
-            </h2>
+              <h1 className={utilStyles.heading2Xl}>{name}</h1>
+            </div>
+            <section className={utilStyles.headingMd}>
+              <p>Name: Lai Tongbin</p>
+              <p>Job: web front-end development engineer</p>
+              <p>Hobby: 💻 && 🏀</p>
+            </section>
+          </>
+        ) : (
+          <>
           </>
         )}
       </header>
       <main>{children}</main>
       {!home && (
         <div className={styles.backToHome}>
-          <Link href="/">← Back to home</Link>
+          <Link href="/">← cd ..</Link>
         </div>
       )}
     </div>

@@ -15,9 +15,10 @@
 }
 
 .headingLg {
+  display: flex;
+  width: 100%;
   font-size: 1.5rem;
   line-height: 1.4;
-  margin: 1rem 0;
 }
 
 .headingMd {
@@ -25,8 +26,8 @@
   line-height: 1.5;
 }
 
-.borderCircle {
-  border-radius: 9999px;
+.borderSquare {
+  border-radius: 10px;
 }
 
 .colorInherit {
@@ -49,4 +50,13 @@
 
 .lightText {
   color: #666;
+}
+
+.yearItem {
+  position: relative;
+  height: 5rem;
+  pointer-events: none;
+  opacity: 0.2;
+  font-weight: 700;
+  font-size: 8em;
 }

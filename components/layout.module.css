@@ -4,6 +4,12 @@
   margin: 3rem auto 6rem;
 }
 
+.headerContainer {
+  display: flex;
+  justify-content: space-around;
+  /* align-items: center; */
+}
+
 .header {
   display: flex;
   flex-direction: column;
