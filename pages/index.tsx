@@ -5,6 +5,7 @@ import { getSortedPostsData } from "../lib/posts"
 import Link from "next/link"
 import Date from "../components/date"
 import { GetStaticProps } from "next"
+import Background from '../components/background'
 
 export default function Home({
   allPostsData,
@@ -20,6 +21,7 @@ export default function Home({
       <Head>
         <title>{siteTitle}</title>
       </Head>
+      <Background />
       <section className={utilStyles.headingMd}>
         <p>[Your Self Introduction]</p>
         <p>
