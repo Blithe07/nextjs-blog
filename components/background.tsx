@@ -22,13 +22,7 @@ function initCanvas(
 ) {
   const ctx = canvas.getContext("2d")!
   const dpr = window.devicePixelRatio || 1
-  const bsr =
-    ctx.webkitBackingStorePixelRatio ||
-    ctx.mozBackingStorePixelRatio ||
-    ctx.msBackingStorePixelRatio ||
-    ctx.oBackingStorePixelRatio ||
-    ctx.backingStorePixelRatio ||
-    1
+  const bsr = 1
   // 比例
   const dpi = _dpi || dpr / bsr
   canvas.style.width = `${width}px`
