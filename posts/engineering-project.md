@@ -3,7 +3,7 @@ title: "How to create a more prefect engineering project"
 date: "2023-04-06"
 ---
 
-## UI framework
+## UI Library
 
 Suggest to select framework which is popular or hot. For example: vue,react,angular,svelte,solid.
 
