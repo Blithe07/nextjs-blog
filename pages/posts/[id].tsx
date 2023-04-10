@@ -3,6 +3,8 @@ import { getAllPostIds, getPostData } from "../../lib/posts"
 import Head from "next/head"
 import Date from "../../components/date"
 import utilStyles from "../../styles/utils.module.css"
+import { CircleDoubleUp } from "@icon-park/react"
+import { useEffect, useState } from "react"
 
 export default function Post({
   postData,
@@ -14,6 +16,29 @@ export default function Post({
     contentHtml: string
   }
 }) {
+  const [show, setShow] = useState(false)
+
+  const scrollTotop = () => {
+    window.scrollTo({ top: 0 })
+    setShow(false)
+  }
+  const scrollUpIcon = show ? (
+    <CircleDoubleUp
+      onClick={scrollTotop}
+      className={utilStyles.circleDoubleUp}
+      theme="outline"
+      size="36"
+      fill="#333"
+    />
+  ) : (
+    <></>
+  )
+
+  useEffect(() => {
+    window.addEventListener("scroll", (e: any) => {
+      setShow(e.target.lastElementChild.scrollTop !== 0)
+    })
+  }, [])
   return (
     <Layout>
       <Head>
@@ -26,6 +51,7 @@ export default function Post({
         </div>
         <div dangerouslySetInnerHTML={{ __html: postData.contentHtml }} />
       </article>
+      {scrollUpIcon}
     </Layout>
   )
 }

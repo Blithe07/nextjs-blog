@@ -60,3 +60,10 @@
   font-weight: 700;
   font-size: 8em;
 }
+
+.circleDoubleUp{
+  position: fixed;
+  right: 10em;
+  bottom: 10em;
+  cursor: pointer;
+}
