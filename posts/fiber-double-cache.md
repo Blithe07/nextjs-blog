@@ -54,13 +54,13 @@ function createWorkInProgress(current,pendingProps){
 
 ### Mount
 
-![fiber-mount](/public/images/mount.png)
+![fiber-mount](/images/mount.png)
 
 when wip generated, it mean render stage finish. FiberRootNode will be pass to Renderer and then render page. After render UI, FiberRootNode.current will point to wip to achieve double cache
 
 ### Update
 
-![fiber-update](/public/images/update.png)
+![fiber-update](/images/update.png)
 
 when update is triggered, generate a wip fiber tree. new wip fiber tree use `alternate` property to associate current fiber tree.
 After wip generated, FiberRootNode will be pass to Renderer and then render page. After render UI, FiberRootNode.current will point to wip to achieve double cache
