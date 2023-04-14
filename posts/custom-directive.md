@@ -1,6 +1,7 @@
 ---
 title: "Implement custom shortcut commands in the terminal"
 date: "2023-04-14"
+category: "utils"
 ---
 
 ## Windows
