@@ -24,8 +24,8 @@ export default function Home({
   allPostsData.forEach((item, idx) => {
     const year = dayjs(item.date).year()
     item.year = year
-    yearSet.add({ label: year, value: year })
     if (!yearToIndexObj[year]) {
+      yearSet.add({ label: year, value: year })
       yearToIndexObj[year] = idx + 1
     }
   })
