@@ -1,6 +1,7 @@
 ---
 title: "Scheduler(React)"
 date: "2023-04-11"
+category: "react"
 ---
 
 ## Principle

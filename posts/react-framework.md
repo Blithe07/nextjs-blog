@@ -1,6 +1,7 @@
 ---
 title: 'React Framework'
 date: '2023-04-09'
+category: "react"
 ---
 
 ## Before React 16(Stack)

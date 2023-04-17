@@ -1,6 +1,7 @@
 ---
 title: "Fiber Node And Double Cache"
 date: "2023-04-10"
+category: "react"
 ---
 
 ## Fiber Node
@@ -13,7 +14,7 @@ function FiberNode(tag, pendingProps, key, mode){
   this.elementType = null;
   this.type = null;
   this.stateNode = null; // dom node
-  
+
   // Fiber
   this.return = null;
   this.child = null;

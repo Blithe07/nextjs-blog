@@ -1,6 +1,7 @@
 ---
 title: "Virtual DOM"
 date: "2023-04-09"
+category: "framework"
 ---
 
 ## Diff for vdom and js object

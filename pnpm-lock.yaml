@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@ant-design/icons': ^5.0.1
   '@icon-park/react': ^1.4.2
   '@types/node': ^18.15.11
   '@types/react': ^18.0.31
@@ -16,6 +17,7 @@ specifiers:
   typescript: ^5.0.3
 
 dependencies:
+  '@ant-design/icons': registry.npmmirror.com/@ant-design/icons/5.0.1_biqbaboplfbrettd7655fr4n2y
   '@icon-park/react': registry.npmmirror.com/@icon-park/react/1.4.2_biqbaboplfbrettd7655fr4n2y
   antd: registry.npmmirror.com/antd/5.4.0_3pf3ktbrffvgnzxoo2eotyjcpi
   date-fns: registry.npmmirror.com/date-fns/2.29.3
