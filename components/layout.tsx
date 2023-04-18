@@ -68,7 +68,7 @@ export default function Layout({
               <section className={utilStyles.headingMd}>
                 <p>Name: Lai Tongbin</p>
                 <p>Job: web front-end development engineer</p>
-                <p>Hobby: 💻 && 🏀</p>
+                <p>Hobby: 💻 && 🏀 && 🀄</p>
               </section>
             </>
           ) : (
