@@ -5,4 +5,5 @@ declare global {
       }
     }
   }
-  
+
+declare module 'react-canvas-nest';
