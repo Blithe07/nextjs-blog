@@ -59,7 +59,6 @@ function beginWork(current,workInProgress,renderLanes){
    - text children => setTextContent
    - non bubble event => listenToNonDelegatedEvent
    - other properties => setValueForProperty
-4. bubbleProperties. flags bubble
 
 ```
 function createInstance(type,props,rootContainerInstance,hostContext,internalInstanceHandle){
@@ -103,4 +102,207 @@ function appendAllChildren(parent,workInProgress,...){
         node = node.sibling
     }
 }
+```
+
+### update
+
+The aim is to mark property which is update. Main logic method: `diffProperties`
+
+```
+function diffProperties(
+  domElement: Element,
+  tag: string,
+  lastProps: Object,
+  nextProps: Object,
+): null | Array<mixed> {
+  // [key1,value1,key2,value2,...]
+  let updatePayload: null | Array<any> = null;
+
+  let propKey;
+  let styleName;
+  let styleUpdates = null;
+  // mark delete property(old exist, new non exist)
+  for (propKey in lastProps) {
+    if (
+      nextProps.hasOwnProperty(propKey) ||
+      !lastProps.hasOwnProperty(propKey) ||
+      lastProps[propKey] == null
+    ) {
+      continue;
+    }
+    switch (propKey) {
+      case 'style': {
+        const lastStyle = lastProps[propKey];
+        for (styleName in lastStyle) {
+          if (lastStyle.hasOwnProperty(styleName)) {
+            if (!styleUpdates) {
+              styleUpdates = ({}: {[string]: $FlowFixMe});
+            }
+            styleUpdates[styleName] = '';
+          }
+        }
+        break;
+      }
+      default: {
+        // For all other deleted properties we add it to the queue. We use
+        // the allowed property list in the commit phase instead.
+        (updatePayload = updatePayload || []).push(propKey, null);
+      }
+    }
+  }
+  // mark update property(new exist)
+  for (propKey in nextProps) {
+    const nextProp = nextProps[propKey];
+    const lastProp = lastProps != null ? lastProps[propKey] : undefined;
+    if (
+      nextProps.hasOwnProperty(propKey) &&
+      nextProp !== lastProp &&
+      (nextProp != null || lastProp != null)
+    ) {
+      switch (propKey) {
+        case 'style': {
+          if (lastProp) {
+            // Unset styles on `lastProp` but not on `nextProp`.
+            for (styleName in lastProp) {
+              if (
+                lastProp.hasOwnProperty(styleName) &&
+                (!nextProp || !nextProp.hasOwnProperty(styleName))
+              ) {
+                if (!styleUpdates) {
+                  styleUpdates = ({}: {[string]: string});
+                }
+                styleUpdates[styleName] = '';
+              }
+            }
+            // Update styles that changed since `lastProp`.
+            for (styleName in nextProp) {
+              if (
+                nextProp.hasOwnProperty(styleName) &&
+                lastProp[styleName] !== nextProp[styleName]
+              ) {
+                if (!styleUpdates) {
+                  styleUpdates = ({}: {[string]: $FlowFixMe});
+                }
+                styleUpdates[styleName] = nextProp[styleName];
+              }
+            }
+          } else {
+            // Relies on `updateStylesByID` not mutating `styleUpdates`.
+            if (!styleUpdates) {
+              if (!updatePayload) {
+                updatePayload = [];
+              }
+              updatePayload.push(propKey, styleUpdates);
+            }
+            styleUpdates = nextProp;
+          }
+          break;
+        }
+        case 'is':
+          if (__DEV__) {
+            console.error(
+              'Cannot update the "is" prop after it has been initialized.',
+            );
+          }
+        // Fall through
+        default: {
+          (updatePayload = updatePayload || []).push(propKey, nextProp);
+        }
+      }
+    }
+  }
+  if (styleUpdates) {
+    (updatePayload = updatePayload || []).push('style', styleUpdates);
+  }
+  return updatePayload;
+}
+```
+
+### flags bubble(mount and update)
+
+Find fiberNode with flag efficiently by flags bubble. Before React 18, use effect list track side effect. It's difficult to track fiberNode side effect and child side effect.
+
+```
+function bubbleProperties(completedWork: Fiber) {
+  const didBailout =
+    completedWork.alternate !== null &&
+    completedWork.alternate.child === completedWork.child;
+
+  let newChildLanes = NoLanes;
+  let subtreeFlags = NoFlags;
+
+  let child = completedWork.child;
+  // Bubble up the earliest expiration time.
+  if (enableProfilerTimer && (completedWork.mode & ProfileMode) !== NoMode) {
+    // In profiling mode, resetChildExpirationTime is also used to reset
+    // profiler durations.
+
+    // It is reset to 0 each time we render and only updated when we don't bailout.
+    // So temporarily set it to 0.
+    let actualDuration = completedWork.actualDuration ?? 0;
+    let treeBaseDuration = ((completedWork.selfBaseDuration: any): number);
+
+    while (child !== null) {
+      newChildLanes = mergeLanes(
+        newChildLanes,
+        mergeLanes(child.lanes, child.childLanes),
+      );
+
+      subtreeFlags |= !didBailout
+        ? child.subtreeFlags
+        : child.subtreeFlags & StaticMask;
+      subtreeFlags |= !didBailout ? child.flags : child.flags & StaticMask;
+
+      // When a fiber is cloned, its actualDuration is reset to 0. This value will
+      // only be updated if work is done on the fiber (i.e. it doesn't bailout).
+      // When work is done, it should bubble to the parent's actualDuration. If
+      // the fiber has not been cloned though, (meaning no work was done), then
+      // this value will reflect the amount of time spent working on a previous
+      // render. In that case it should not bubble. We determine whether it was
+      // cloned by comparing the child pointer.
+      // $FlowFixMe[unsafe-addition] addition with possible null/undefined value
+      if (!didBailout) {
+        actualDuration += child.actualDuration ?? 0;
+      }
+
+      // $FlowFixMe[unsafe-addition] addition with possible null/undefined value
+      treeBaseDuration += child.treeBaseDuration;
+      child = child.sibling;
+    }
+
+    if (!didBailout) {
+      completedWork.actualDuration = actualDuration;
+    }
+    completedWork.treeBaseDuration = treeBaseDuration;
+  } else {
+    while (child !== null) {
+      newChildLanes = mergeLanes(
+        newChildLanes,
+        mergeLanes(child.lanes, child.childLanes),
+      );
+
+      // "Static" flags share the lifetime of the fiber/hook they belong to,
+      // so we should bubble those up even during a bailout. All the other
+      // flags have a lifetime only of a single render + commit, so we should
+      // ignore them.
+      subtreeFlags |= !didBailout
+        ? child.subtreeFlags
+        : child.subtreeFlags & StaticMask;
+      subtreeFlags |= !didBailout ? child.flags : child.flags & StaticMask;
+
+      // Update the return pointer so the tree is consistent. This is a code
+      // smell because it assumes the commit phase is never concurrent with
+      // the render phase. Will address during refactor to alternate model.
+      child.return = completedWork;
+
+      child = child.sibling;
+    }
+  }
+
+  completedWork.subtreeFlags |= subtreeFlags;
+  completedWork.childLanes = newChildLanes;
+
+  return didBailout;
+}
+
 ```
