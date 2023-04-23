@@ -71,4 +71,5 @@
   right: 10em;
   bottom: 10em;
   cursor: pointer;
+  z-index: 10;
 }
