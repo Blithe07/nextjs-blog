@@ -68,7 +68,7 @@ export default function Home({
       )
       .filter((item) =>
         newSearchParams.category
-          ? item.category === newSearchParams.category
+          ? item.category?.includes(newSearchParams.category)
           : true
       )
 
@@ -82,6 +82,13 @@ export default function Home({
       category: undefined as string | undefined,
     })
     setPostsData(allPostsData)
+  }
+
+  const generateTag = (category: string) => {
+    const categoryArr = category.split(",")
+    return categoryArr.map((item) => (
+      <Tag color={categoryToTagMap.get(item)}>{item}</Tag>
+    ))
   }
 
   return (
@@ -139,9 +146,7 @@ export default function Home({
                 <br />
                 <small className={utilStyles.lightText}>
                   <Date dateString={date} />
-                  {category && (
-                    <Tag color={categoryToTagMap.get(category)}>{category}</Tag>
-                  )}
+                  {category && <div>{generateTag(category)}</div>}
                 </small>
               </li>
             </Fragment>

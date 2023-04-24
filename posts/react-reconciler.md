@@ -9,11 +9,11 @@ The second stage work of Render is reconciler. It contains beginWork and complet
 - beginWork: According to current fiberNode, generate next fiberNode and then mark flags
 - completeWork: According to wip.tag, create element or mark the update status of element and then handle flags bubble
 
-![react reconciler](/public/images/react-reconciler.png)
+![react reconciler](/images/react-reconciler.png)
 
 ## beginWork
 
-![react reconciler beginWork](/public/images/react-reconciler-beginWork.png)
+![react reconciler beginWork](/images/react-reconciler-beginWork.png)
 
 `mountChildFibers` and `reconcileChildFiber` are both call `ChilReconciler`, and pass difference param(mount pass `false`, update pass `true`)
 
@@ -43,7 +43,7 @@ function beginWork(current,workInProgress,renderLanes){
 
 ## completeWork
 
-![react reconciler completeWork](/public/images/react-reconciler-completeWork.png)
+![react reconciler completeWork](/images/react-reconciler-completeWork.png)
 
 ### mount
 
