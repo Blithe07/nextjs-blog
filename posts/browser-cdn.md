@@ -1,7 +1,7 @@
 ---
 title: "CDN Introduction"
 date: "2023-04-24"
-category: "browser,server"
+category: "browser"
 ---
 
 # CDN(Content Delivery Network) 加速原理
