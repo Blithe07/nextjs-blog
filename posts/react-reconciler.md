@@ -1,8 +1,10 @@
 ---
-title: "Source tour of 'beginWork' and 'completeWork'"
-date: "2023-04-19"
+title: "Source tour of 'beginWork'、'completeWork' and  `commitWork`"
+date: "2023-04-25"
 category: "react"
 ---
+
+# Render Stage
 
 The second stage work of Render is reconciler. It contains beginWork and completeWork.
 
@@ -303,6 +305,248 @@ function bubbleProperties(completedWork: Fiber) {
   completedWork.childLanes = newChildLanes;
 
   return didBailout;
+}
+
+```
+
+# Commit Stage
+
+Startup cann't be interrupted until execution synchronization complete.
+
+- BeforeMutation: Handle deletions(just dispatch 'beforeblur' event) and then execute corresponding method according to flag.
+- Mutation:  Insert or append placementNode. Execute `recursivelyTraverseMutationEffects` and `commitReconciliationEffects` mainly and then execute other's method according to flag.
+- Layout: Handle lifecycles for mount、updateQueue.callbacks and so on. Execute `recursivelyTraverseLayoutEffects` mainly and then execute other's method according to flag.
+
+## BeforeMutation
+
+```
+function commitBeforeMutationEffects(
+  root: FiberRoot,
+  firstChild: Fiber,
+){
+  // ...
+  // set global variable
+  nextEffect = firstChild;
+  // main task
+  commitBeforeMutationEffects_begin();
+  // ...
+}
+
+function commitBeforeMutationEffects_begin() {
+  while (nextEffect !== null) {
+    const fiber = nextEffect;
+
+    // This phase is only used for beforeActiveInstanceBlur.
+    // Let's skip the whole loop if it's off.
+    if (enableCreateEventHandleAPI) {
+      // TODO: Should wrap this in flags check, too, as optimization
+      const deletions = fiber.deletions;
+      if (deletions !== null) {
+        for (let i = 0; i < deletions.length; i++) {
+          const deletion = deletions[i];
+          commitBeforeMutationEffectsDeletion(deletion);
+        }
+      }
+    }
+
+    const child = fiber.child;
+    // DFS
+    if (
+      (fiber.subtreeFlags & BeforeMutationMask) !== NoFlags &&
+      child !== null
+    ) {
+      child.return = fiber;
+      nextEffect = child;
+    } else {
+      commitBeforeMutationEffects_complete();
+    }
+  }
+}
+
+function commitBeforeMutationEffects_complete() {
+  while (nextEffect !== null) {
+    const fiber = nextEffect;
+    try {
+      commitBeforeMutationEffectsOnFiber(fiber);
+    } catch (error) {
+      captureCommitPhaseError(fiber, fiber.return, error);
+    }
+
+    const sibling = fiber.sibling;
+    // exist sibling, execute commitBeforeMutationEffects_begin
+    if (sibling !== null) {
+      sibling.return = fiber.return;
+      nextEffect = sibling;
+      return;
+    }
+    // none exist sibling, execute commitBeforeMutationEffects_complete
+    nextEffect = fiber.return;
+  }
+}
+
+function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
+  const current = finishedWork.alternate;
+  const flags = finishedWork.flags;
+  
+  // handle SuspenseComponent
+  if (enableCreateEventHandleAPI) {
+    if (!shouldFireAfterActiveInstanceBlur && focusedInstanceHandle !== null) {
+      // Check to see if the focused element was inside of a hidden (Suspense) subtree.
+      // TODO: Move this out of the hot path using a dedicated effect tag.
+      if (
+        finishedWork.tag === SuspenseComponent &&
+        isSuspenseBoundaryBeingHidden(current, finishedWork) &&
+        // $FlowFixMe[incompatible-call] found when upgrading Flow
+        doesFiberContain(finishedWork, focusedInstanceHandle)
+      ) {
+        shouldFireAfterActiveInstanceBlur = true;
+        beforeActiveInstanceBlur(finishedWork);
+      }
+    }
+  }
+
+  switch (finishedWork.tag) {
+    case FunctionComponent: {
+      if (enableUseEffectEventHook) {
+        if ((flags & Update) !== NoFlags) {
+          commitUseEffectEventMount(finishedWork);
+        }
+      }
+      break;
+    }
+    case ClassComponent: {
+      if ((flags & Snapshot) !== NoFlags) {
+        if (current !== null) {
+          const prevProps = current.memoizedProps;
+          const prevState = current.memoizedState;
+          const instance = finishedWork.stateNode;
+          // We could update instance props and state here,
+          // but instead we rely on them being set during last render.
+          // TODO: revisit this when we implement resuming.
+
+          const snapshot = instance.getSnapshotBeforeUpdate(
+            finishedWork.elementType === finishedWork.type
+              ? prevProps
+              : resolveDefaultProps(finishedWork.type, prevProps),
+            prevState,
+          );
+          instance.__reactInternalSnapshotBeforeUpdate = snapshot;
+        }
+      }
+      break;
+    }
+    case HostRoot: {
+      if ((flags & Snapshot) !== NoFlags) {
+        if (supportsMutation) {
+          const root = finishedWork.stateNode;
+          clearContainer(root.containerInfo);
+        }
+      }
+      break;
+    }
+    case HostComponent:
+    case HostHoistable:
+    case HostSingleton:
+    case HostText:
+    case HostPortal:
+    case IncompleteClassComponent:
+    case ForwardRef:
+    case SimpleMemoComponent:
+      // Nothing to do for these component types
+      break;
+    default: {
+      if ((flags & Snapshot) !== NoFlags) {
+        throw new Error(
+          'This unit of work tag should not have side-effects. This error is ' +
+            'likely caused by a bug in React. Please file an issue.',
+        );
+      }
+    }
+  }
+}
+```
+
+## Mutation
+
+```
+function commitMutationEffects(
+  root: FiberRoot,
+  finishedWork: Fiber,
+  committedLanes: Lanes,
+) {
+  inProgressLanes = committedLanes;
+  inProgressRoot = root;
+
+  commitMutationEffectsOnFiber(finishedWork, root, committedLanes);
+
+  inProgressLanes = null;
+  inProgressRoot = null;
+}
+
+function commitMutationEffectsOnFiber(
+  finishedWork: Fiber,
+  root: FiberRoot,
+  lanes: Lanes,
+) {
+  const current = finishedWork.alternate;
+  const flags = finishedWork.flags;
+
+  // The effect flag should be checked *after* we refine the type of fiber,
+  // because the fiber tag is more specific. An exception is any flag related
+  // to reconciliation, because those can be set on all fiber types.
+  switch (finishedWork.tag) {
+    case xxx: {
+      // handle deletions
+      recursivelyTraverseMutationEffects(root, finishedWork, lanes);
+      // insert or append placement node
+      commitReconciliationEffects(finishedWork);
+
+      // According to flag, execute corresponding method
+      // ...
+    }
+  }
+}
+```
+
+## Layout
+
+```
+function commitLayoutEffects(
+  finishedWork: Fiber,
+  root: FiberRoot,
+  committedLanes: Lanes,
+): void {
+  inProgressLanes = committedLanes;
+  inProgressRoot = root;
+
+  const current = finishedWork.alternate;
+  // main task
+  commitLayoutEffectOnFiber(root, current, finishedWork, committedLanes);
+
+  inProgressLanes = null;
+  inProgressRoot = null;
+}
+
+function commitLayoutEffectOnFiber(
+  finishedRoot: FiberRoot,
+  current: Fiber | null,
+  finishedWork: Fiber,
+  committedLanes: Lanes,
+): void {
+  // When updating this function, also update reappearLayoutEffects, which does
+  // most of the same things when an offscreen tree goes from hidden -> visible.
+  const flags = finishedWork.flags;
+  switch (finishedWork.tag) {
+    case xxx: {
+        // WFS execute commitLayoutEffectOnFiber(sibling)
+        recursivelyTraverseLayoutEffects(
+          finishedRoot,
+          finishedWork,
+          committedLanes,
+        );
+        // According to flag, execute corresponding method
+    }
+  }
 }
 
 ```
