@@ -8,7 +8,7 @@ category: "interview"
 
 Use the Blob. slice method to cut large files according to the specified size, and then upload them in blocks through multiple threads. After all blocks are successfully uploaded, notify the server to merge the blocks.
 
-![Large File Upload](/public/images/large-file-upload.jpg)
+![Large File Upload](/images/large-file-upload.jpg)
 
 ## Code Implement
 
