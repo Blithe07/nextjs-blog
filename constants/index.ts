@@ -8,4 +8,5 @@ export const categoryToTagMap = new Map([
   ["browser", "green"],
   ["css", "cyan"],
   ["javascript", "blue"],
+  ["interview ", "geekblue"],
 ])
