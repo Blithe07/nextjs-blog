@@ -138,13 +138,14 @@ category: "engineer"
          4. businessInfo:By obtaining this business information, we can have a clearer understanding of the current product situation, so that product managers can better plan the future direction of the product.
 
 2. upload
-    1. Ajax
-    2. Image
+    1. Ajax(Not recommended)
+    2. Image(recommended, no compatbility issue)
         - Why use image to report?
             1. non cross domain issues.
             2. won't block page loading.(new Image())
         - Why gif?
             1. size small.
+    3. Navigator.sendBeacon(recommended, asynchronous, not restricted by same origin)
 3. analysis
     1. stand-alone: Websites with low traffic and few logs.
     2. colony: Websites with high traffic and logs.
