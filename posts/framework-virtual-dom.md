@@ -6,7 +6,7 @@ category: "framework"
 
 ## Diff for vdom and js object
 
-vdom is a coding thought, usve it to desribe real dom. js object is a specific implementation.
+vdom is a coding thought, use it to desribe real dom. js object is a specific implementation.
 
 ## superiority of virtual dom 
 
