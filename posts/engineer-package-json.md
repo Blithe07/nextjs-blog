@@ -1,6 +1,6 @@
 ---
 title: "package.json"
-date: "2023-05-04"
+date: "2023-05-12"
 category: "engineer"
 ---
 
@@ -14,3 +14,9 @@ category: "engineer"
 6. module: Define npm entry file which follow ESM modular specification(browser/node)
 7. browser: Define npm entry file(browser)
 8. exports: The real and all exports of the npm package will have higher priority than fields such as `main` and `file`
+
+## version rule
+
+- ^: Major releases stable, minor and patch releases will install the latest.
+- ~: Major and minor releases stable, patch releases will install the latest.
+- x.x.x: Install the specified version。

@@ -55,4 +55,4 @@ In this traverse, mean to exist new React element or old fiberNode isn't travers
 
 Use two pointers point to array start and end, move them closer to the middle.
 
-But React didn't use this algorithm, because fiberNode don't exist back pointer. FiberNdoe only can traverse form start to end. And there are fewer scenarios where list inversion and double-ended search are required, so React Team live with hitting the bad case in for every insert or move.(If this method is not ideal, consider implementing double-ended diff in the future)
+But React didn't use this algorithm, because fiberNode don't exist back pointer. FiberNode only can traverse form start to end. And there are fewer scenarios where list inversion and double-ended search are required, so React Team live with hitting the bad case in for every insert or move.(If this method is not ideal, consider implementing double-ended diff in the future)
