@@ -8,41 +8,90 @@ import { GetStaticProps } from "next"
 import Background from "../components/background"
 import dayjs from "dayjs"
 import { Fragment, useEffect, useState } from "react"
-import { Select, Input, Tag, Form, Button } from "antd"
+import { Select, Input, Tag, Form, Button, Pagination, Empty } from "antd"
 import { categoryToTagMap } from "@/constants"
 import { ClearOutlined } from "@ant-design/icons"
+import { useRouter } from "next/router"
+
+type PostInfo = {
+  [key: string]: any
+  id: string
+  date: string
+  year: number
+  title: string
+  category?: string | undefined
+}
+
+type OptionInfo = {
+  label: number
+  value: number
+}
+
+type SearchParams = {
+  year?: number
+  blog: string
+  category?: string
+}
+
+type YearToIndexInfo = {
+  [key: string]: number
+}
+
 export default function Home({
   allPostsData,
   yearOptions,
 }: {
-  allPostsData: {
-    [key: string]: any
-    id: string
-    date: string
-    year: number
-    title: string
-    category?: string
-  }[]
-  yearOptions: {
-    label: number
-    value: number
-  }[]
+  allPostsData: PostInfo[]
+  yearOptions: OptionInfo[]
 }) {
   const categoryOptions = [...categoryToTagMap.keys()].map((item) => ({
     label: item,
     value: item,
   }))
-  const [postsData, setPostsData] = useState(allPostsData.filter(Boolean))
-  const [searchParams, setSearchParams] = useState({
-    year: undefined as number | undefined,
-    blog: "",
-    category: undefined as string | undefined,
-  })
-  const [yearToIndexObj, setYearToIndexObj] = useState(
-    {} as { [key: string]: number }
-  )
+
+  const router = useRouter()
+
   useEffect(() => {
-    const tmpYearToIndexObj = {} as { [key: string]: number }
+    const position = router.asPath.indexOf("#")
+    if (position === -1) return
+    // current=1&pageSize=10
+    const hash = router.asPath.slice(position + 1)
+    const [currentInfo, sizeInfo] = hash.split("&")
+    const [_, current] = currentInfo.split("=")
+    const [__, pageSize] = sizeInfo.split("=")
+    if (currentInfo && sizeInfo) {
+      handlePageChange(+current, +pageSize)
+    }
+  }, [router.asPath])
+
+  const [pageInfo, setPageInfo] = useState({
+    current: 1,
+    pageSize: 10,
+    total: allPostsData.length,
+  })
+
+  const getPostByPage = (
+    index: number,
+    current = pageInfo.current,
+    pageSize = pageInfo.pageSize
+  ) => {
+    const startPage = (current - 1) * pageSize
+    const endPage = startPage + pageSize
+    return index >= startPage && index < endPage
+  }
+
+  const [postsData, setPostsData] = useState(
+    allPostsData.filter(Boolean).filter((_, index) => getPostByPage(index))
+  )
+  const [searchParams, setSearchParams] = useState({
+    year: undefined,
+    blog: "",
+    category: undefined,
+  } as SearchParams)
+  const [yearToIndexObj, setYearToIndexObj] = useState({} as YearToIndexInfo)
+
+  useEffect(() => {
+    const tmpYearToIndexObj = {} as YearToIndexInfo
     postsData.forEach((item, idx) => {
       if (!tmpYearToIndexObj[item.year]) {
         tmpYearToIndexObj[item.year] = idx + 1
@@ -51,11 +100,8 @@ export default function Home({
     setYearToIndexObj(tmpYearToIndexObj)
   }, [postsData])
 
-  const handleChange = (value: string | number, name: string) => {
-    const newSearchParams = { ...searchParams, [name]: value }
-    setSearchParams(newSearchParams)
-
-    const filterPostData = allPostsData
+  const getFilterPost = (newSearchParams: SearchParams) => {
+    return allPostsData
       .filter((item) =>
         newSearchParams.blog
           ? item.title
@@ -71,17 +117,52 @@ export default function Home({
           ? item.category?.includes(newSearchParams.category)
           : true
       )
+  }
 
-    setPostsData(filterPostData)
+  const handleSearchChange = (value: string | number, name: string) => {
+    const newSearchParams = { ...searchParams, [name]: value }
+    setSearchParams(newSearchParams)
+
+    const filterPostData = getFilterPost(newSearchParams)
+
+    setPageInfo({
+      ...pageInfo,
+      current: 1,
+      total: filterPostData.length,
+    })
+    setPostsData(filterPostData.filter((_, index) => getPostByPage(index, 1)))
+  }
+
+  const handlePageChange = (current: number, pageSize: number) => {
+    setPageInfo({
+      ...pageInfo,
+      current,
+      pageSize,
+    })
+    const filterPostData = getFilterPost(searchParams)
+    setPostsData(
+      filterPostData.filter((_, index) =>
+        getPostByPage(index, current, pageSize)
+      )
+    )
   }
 
   const reset = () => {
     setSearchParams({
-      year: undefined as number | undefined,
+      year: undefined,
       blog: "",
-      category: undefined as string | undefined,
+      category: undefined,
     })
-    setPostsData(allPostsData)
+    setPageInfo({
+      total: allPostsData.length,
+      current: 1,
+      pageSize: 10,
+    })
+    setPostsData(
+      allPostsData
+        .filter(Boolean)
+        .filter((_, index) => getPostByPage(index, 1, 10))
+    )
   }
 
   const generateTag = (category: string) => {
@@ -103,7 +184,7 @@ export default function Home({
             <Form.Item label="Year:">
               <Select
                 style={{ width: 120 }}
-                onChange={(value) => handleChange(value, "year")}
+                onChange={(value) => handleSearchChange(value, "year")}
                 value={searchParams.year}
                 options={yearOptions}
                 showSearch
@@ -115,14 +196,14 @@ export default function Home({
               <Input
                 value={searchParams.blog}
                 style={{ width: 120 }}
-                onChange={(e) => handleChange(e.target.value, "blog")}
+                onChange={(e) => handleSearchChange(e.target.value, "blog")}
                 placeholder="Please input"
               />
             </Form.Item>
             <Form.Item label="Category">
               <Select
                 style={{ width: 120 }}
-                onChange={(value) => handleChange(value, "category")}
+                onChange={(value) => handleSearchChange(value, "category")}
                 value={searchParams.category}
                 options={categoryOptions}
                 showSearch
@@ -139,10 +220,16 @@ export default function Home({
           {postsData.map(({ id, date, title, year, category }, idx) => (
             <Fragment key={id + year}>
               {yearToIndexObj[year] === idx + 1 && (
-                <div className={utilStyles.yearItem}>{year}</div>
+                <div key={id + year + "div"} className={utilStyles.yearItem}>
+                  {year}
+                </div>
               )}
-              <li className={utilStyles.listItem}>
-                <Link href={`/posts/${id}`}>{title}</Link>
+              <li className={utilStyles.listItem} key={id + year + "li"}>
+                <Link
+                  href={`/posts/${id}#current=${pageInfo.current}&pageSize=${pageInfo.pageSize}`}
+                >
+                  {title}
+                </Link>
                 <br />
                 <small className={utilStyles.lightText}>
                   <Date dateString={date} />
@@ -151,8 +238,17 @@ export default function Home({
               </li>
             </Fragment>
           ))}
+          {!postsData.length && <Empty description="Data Not Found"></Empty>}
         </ul>
       </section>
+      <Pagination
+        className={utilStyles.pagination}
+        current={pageInfo.current}
+        pageSize={pageInfo.pageSize}
+        total={pageInfo.total}
+        showTotal={(total) => `Total ${total} items`}
+        onChange={handlePageChange}
+      />
     </Layout>
   )
 }

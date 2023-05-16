@@ -6,6 +6,8 @@ import styles from "./layout.module.css"
 import utilStyles from "../styles/utils.module.css"
 import Link from "next/link"
 import ReactCanvasNest from "react-canvas-nest"
+import { useRouter } from "next/router"
+import { useEffect, useState } from "react"
 
 const name = "Blithe"
 export const siteTitle = "Blog"
@@ -21,6 +23,16 @@ export default function Layout({
   children: JSX.Element[]
   home?: boolean
 }) {
+  const router = useRouter()
+
+  const [hash, setHash] = useState("")
+
+  useEffect(() => {
+    const position = router.asPath.indexOf("#")
+    if(position === -1) return
+    setHash(router.asPath.slice(position))
+  }, [router.asPath])
+
   return (
     <div className={styles.outerContainer}>
       {!home && (
@@ -78,7 +90,7 @@ export default function Layout({
         <main>{children}</main>
         {!home && (
           <div className={styles.backToHome}>
-            <Link href="/">← cd ..</Link>
+            <Link href={"/" + hash}>← cd ..</Link>
           </div>
         )}
       </div>

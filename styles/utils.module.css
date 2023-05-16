@@ -59,7 +59,7 @@
 
 .yearItem {
   position: relative;
-  height: 5rem;
+  height: 4rem;
   pointer-events: none;
   opacity: 0.2;
   font-weight: 700;
@@ -72,4 +72,10 @@
   bottom: 10em;
   cursor: pointer;
   z-index: 10;
+}
+
+.pagination {
+  margin-top: 4rem;
+  display: flex;
+  justify-content: end;
 }
