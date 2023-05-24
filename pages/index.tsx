@@ -165,10 +165,12 @@ export default function Home({
     )
   }
 
-  const generateTag = (category: string) => {
+  const generateTag = (category: string, id: string) => {
     const categoryArr = category.split(",")
     return categoryArr.map((item) => (
-      <Tag color={categoryToTagMap.get(item)}>{item}</Tag>
+      <Tag key={id + category} color={categoryToTagMap.get(item)}>
+        {item}
+      </Tag>
     ))
   }
 
@@ -212,19 +214,15 @@ export default function Home({
               />
             </Form.Item>
           </Form>
-          <Button icon={<ClearOutlined />} onClick={reset}>
-            reset
-          </Button>
+          <Button icon={<ClearOutlined />} onClick={reset}></Button>
         </div>
         <ul className={utilStyles.list}>
           {postsData.map(({ id, date, title, year, category }, idx) => (
-            <Fragment key={id + year}>
+            <Fragment key={id}>
               {yearToIndexObj[year] === idx + 1 && (
-                <div key={id + year + "div"} className={utilStyles.yearItem}>
-                  {year}
-                </div>
+                <div className={utilStyles.yearItem}>{year}</div>
               )}
-              <li className={utilStyles.listItem} key={id + year + "li"}>
+              <li className={utilStyles.listItem}>
                 <Link
                   href={`/posts/${id}#current=${pageInfo.current}&pageSize=${pageInfo.pageSize}`}
                 >
@@ -233,7 +231,7 @@ export default function Home({
                 <br />
                 <small className={utilStyles.lightText}>
                   <Date dateString={date} />
-                  {category && <div>{generateTag(category)}</div>}
+                  {category && <div>{generateTag(category, id)}</div>}
                 </small>
               </li>
             </Fragment>
