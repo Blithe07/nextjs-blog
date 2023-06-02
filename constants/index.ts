@@ -6,7 +6,9 @@ export const categoryToTagMap = new Map([
   ["engineer", "gold"],
   ["framework", "lime"],
   ["browser", "green"],
+  ["mobile", "#2db7f5"],
   ["css", "cyan"],
   ["javascript", "blue"],
   ["interview ", "geekblue"],
+  ["database", "purple"],
 ])
