@@ -1,5 +1,5 @@
 ---
-title: "Database Advanced(Incomplete)"
+title: "Database Advanced"
 date: "2023-05-31"
 category: "database"
 ---
