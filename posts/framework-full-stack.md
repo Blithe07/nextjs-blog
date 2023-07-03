@@ -1,6 +1,6 @@
 ---
 title: "Full Stack Framework Granularity"
-date: "2023-07-08"
+date: "2023-07-02"
 category: "framework"
 ---
 
