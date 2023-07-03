@@ -7,7 +7,7 @@ import { CircleDoubleUp } from "@icon-park/react"
 import { useEffect, useState } from "react"
 
 export default function Post({
-  postData,
+  postData = { id: '', title: '', date: '', contentHtml: '' },
 }: {
   postData: {
     id: string
