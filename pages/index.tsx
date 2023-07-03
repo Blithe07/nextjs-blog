@@ -3,7 +3,7 @@ import Layout, { siteTitle } from "../components/layout"
 import utilStyles from "../styles/utils.module.css"
 import { getSortedPostsData } from "../lib/posts"
 import Link from "next/link"
-import Date from "../components/date"
+import DateComp from "../components/date"
 import { GetStaticProps } from "next"
 import Background from "../components/background"
 import dayjs from "dayjs"
@@ -230,7 +230,7 @@ export default function Home({
                 </Link>
                 <br />
                 <small className={utilStyles.lightText}>
-                  <Date dateString={date} />
+                  <DateComp dateString={date} />
                   {category && <div>{generateTag(category, id)}</div>}
                 </small>
               </li>
