@@ -25,6 +25,11 @@ Application:
     - application aggregation
     - developed jointly by different teams
 
+## Thought
+
+1. Routing distributed. Through the reverse proxy function of the HTTP server, the request is routed to the corresponding application.
+2. Front-end microserivces. 
+
 ## Implement
 
 1. MPA
