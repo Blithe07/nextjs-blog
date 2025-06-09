@@ -61,7 +61,7 @@ const SimpleQRScanner = () => {
     };
 
     // 启动错误处理
-    const handleStartError = (err) => {
+    const handleStartError = (err: any) => {
         alert('Scan error:' + err);
         setError(`扫码启动失败: ${err.message}`);
         setIsScanning(false);
