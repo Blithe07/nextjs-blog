@@ -29,7 +29,7 @@ export default function Layout({
 
   useEffect(() => {
     const position = router.asPath.indexOf("#")
-    if(position === -1) return
+    if (position === -1) return
     setHash(router.asPath.slice(position))
   }, [router.asPath])
 
@@ -81,6 +81,7 @@ export default function Layout({
                 <p>Name: Lai Tongbin</p>
                 <p>Job: web front-end development engineer</p>
                 <p>Hobby: 💻 && 🏀 && 📚</p>
+                <p onClick={() => { router.push('/demo') }} style={{ cursor: 'pointer' }}>Demo with https</p>
               </section>
             </>
           ) : (

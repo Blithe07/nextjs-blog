@@ -4,7 +4,8 @@ import dynamic from "next/dynamic"
 import "../styles/global.css"
 
 export default function App({ pageProps }: AppProps) {
-  const url = pageProps.allPostsData ? 'index' : 'posts/[id]'
+  console.log(pageProps, '--')
+  const url = pageProps.allPostsData ? 'index' : pageProps.postData ? 'posts/[id]' : 'demo'
   const DynamicComponentWithNoSSR = dynamic(() => import(`./${url}`), {
     loading: () => <Loading />,
     ssr: false, // 禁用服务器端渲染
