@@ -5,7 +5,7 @@ const SimpleQRScanner = () => {
     const [scanResult, setScanResult] = useState('');
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState('');
-    const scannerRef = useRef(null);
+    const scannerRef = useRef<Html5Qrcode>();
     const scannerContainerId = 'qr-scanner-container';
 
     // 支持的扫码格式
@@ -33,12 +33,12 @@ const SimpleQRScanner = () => {
             setIsScanning(true);
             setError('');
 
-            await scannerRef.current.start(
+            await scannerRef.current?.start(
                 { facingMode: 'environment' }, // 使用后置摄像头
                 {
                     fps: 10,
                     qrbox: 250, // 扫描区域大小
-                    rememberLastUsedCamera: true
+                    // rememberLastUsedCamera: true
                 },
                 handleScanSuccess,
                 handleScanError
@@ -49,20 +49,20 @@ const SimpleQRScanner = () => {
     };
 
     // 扫码成功回调
-    const handleScanSuccess = (decodedText, decodedResult) => {
+    const handleScanSuccess = (decodedText: string, decodedResult: any) => {
         setScanResult(decodedText);
-        console.log(`扫描到 ${decodedResult.result.format}:`, decodedText);
+        alert(`扫描到 ${decodedResult.result.format}: ${decodedText}`,);
         stopScan();
     };
 
     // 扫码错误回调
-    const handleScanError = (errorMsg) => {
-        console.warn('Scan error:', errorMsg);
+    const handleScanError = (errorMsg: any) => {
+        alert('Scan error:' + errorMsg);
     };
 
     // 启动错误处理
     const handleStartError = (err) => {
-        console.error('Start error:', err);
+        alert('Scan error:' + err);
         setError(`扫码启动失败: ${err.message}`);
         setIsScanning(false);
 
