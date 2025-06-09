@@ -5,23 +5,31 @@ const SimpleQRScanner = () => {
     const [scanResult, setScanResult] = useState('');
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState('');
+    const [scanStatus, setScanStatus] = useState('等待扫描...');
     const scannerRef = useRef<Html5Qrcode>();
     const scannerContainerId = 'qr-scanner-container';
+    const scanTimeoutRef = useRef<NodeJS.Timeout>();
 
     // 支持的扫码格式
-    //   const formatsToSupport = [
-    //     Html5Qrcode.supportedFormats.QR_CODE,
-    //     Html5Qrcode.supportedFormats.EAN_13,
-    //     Html5Qrcode.supportedFormats.CODE_128,
-    //     Html5Qrcode.supportedFormats.UPC_A,
-    //   ];
+    // const formatsToSupport = [
+    //   Html5Qrcode.supportedFormats.QR_CODE,
+    //   Html5Qrcode.supportedFormats.EAN_13,
+    //   Html5Qrcode.supportedFormats.CODE_128,
+    //   Html5Qrcode.supportedFormats.UPC_A,
+    // ];
 
     // 初始化扫码器
     const initScanner = () => {
         if (!scannerRef.current) {
             scannerRef.current = new Html5Qrcode(
                 scannerContainerId,
-                { verbose: false }
+                {
+                    // formatsToSupport,
+                    verbose: false,
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true
+                    }
+                }
             );
         }
     };
@@ -32,13 +40,29 @@ const SimpleQRScanner = () => {
             initScanner();
             setIsScanning(true);
             setError('');
+            setScanStatus('正在扫描...');
+            setScanResult('');
+
+            // 清除之前的超时
+            if (scanTimeoutRef.current) {
+                clearTimeout(scanTimeoutRef.current);
+            }
+
+            // 设置超时（30秒无结果自动停止）
+            scanTimeoutRef.current = setTimeout(() => {
+                if (isScanning) {
+                    setScanStatus('未检测到二维码/条形码');
+                    stopScan();
+                }
+            }, 30000);
 
             await scannerRef.current?.start(
-                { facingMode: 'environment' }, // 使用后置摄像头
+                { facingMode: 'environment' },
                 {
-                    fps: 10,
-                    qrbox: 250, // 扫描区域大小
-                    // rememberLastUsedCamera: true
+                    fps: 5, // 降低帧率减少性能消耗
+                    qrbox: 250,
+                    // rememberLastUsedCamera: true,
+                    aspectRatio: 1.0 // 保持方形视图
                 },
                 handleScanSuccess,
                 handleScanError
@@ -49,28 +73,36 @@ const SimpleQRScanner = () => {
     };
 
     // 扫码成功回调
-    const handleScanSuccess = (decodedText: string, decodedResult: any) => {
+    const handleScanSuccess = (decodedText: any, decodedResult: any) => {
+        clearTimeout(scanTimeoutRef.current);
         setScanResult(decodedText);
-        alert(`扫描到 ${decodedResult.result.format}: ${decodedText}`,);
+        setScanStatus(`成功扫描到: ${decodedResult.result.format}`);
         stopScan();
     };
 
-    // 扫码错误回调
+    // 扫码错误回调 - 修改为不停止扫描
     const handleScanError = (errorMsg: any) => {
-        alert('Scan error:' + errorMsg);
+        console.log('Scan error:', errorMsg);
+        setScanStatus('对准二维码/条形码...');
+        // 不停止扫描，继续尝试
     };
 
     // 启动错误处理
     const handleStartError = (err: any) => {
-        alert('Scan error:' + err);
-        setError(`扫码启动失败: ${err.message}`);
+        console.error('Start error:', err);
         setIsScanning(false);
 
+        let errorMessage = '扫码启动失败';
         if (err.name === 'NotAllowedError') {
-            setError('摄像头权限被拒绝，请允许访问');
+            errorMessage = '摄像头权限被拒绝，请允许访问';
         } else if (err.name === 'NotFoundError') {
-            setError('未找到摄像头设备');
+            errorMessage = '未找到摄像头设备';
+        } else if (err.name === 'NotReadableError') {
+            errorMessage = '摄像头被占用，请关闭其他使用摄像头的应用';
         }
+
+        setError(errorMessage);
+        setScanStatus(errorMessage);
     };
 
     // 停止扫码
@@ -83,24 +115,19 @@ const SimpleQRScanner = () => {
             console.error('Stop error:', err);
         } finally {
             setIsScanning(false);
+            clearTimeout(scanTimeoutRef.current);
         }
     };
 
-    // 复制结果
-    const copyResult = () => {
-        if (scanResult) {
-            navigator.clipboard.writeText(scanResult);
-            alert('已复制到剪贴板');
-        }
-    };
-
-    // 组件卸载时停止扫码
+    // 组件卸载时清理
     useEffect(() => {
         return () => {
             stopScan();
+            if (scanTimeoutRef.current) {
+                clearTimeout(scanTimeoutRef.current);
+            }
         };
     }, []);
-
     return (
         <div style={styles.container}>
             <h1>简易扫码器</h1>
@@ -109,8 +136,6 @@ const SimpleQRScanner = () => {
             <div style={styles.resultContainer}>
                 <h3>扫描结果：</h3>
                 <div
-                    onClick={copyResult}
-                    title="点击复制"
                 >
                     {scanResult || '暂无结果'}
                 </div>
