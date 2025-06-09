@@ -103,13 +103,12 @@ const SimpleQRScanner = () => {
 
     return (
         <div style={styles.container}>
-            <h1 style={styles.title}>简易扫码器</h1>
+            <h1>简易扫码器</h1>
 
             {/* 扫码结果显示 */}
             <div style={styles.resultContainer}>
                 <h3>扫描结果：</h3>
                 <div
-                    style={styles.resultText}
                     onClick={copyResult}
                     title="点击复制"
                 >
@@ -121,7 +120,6 @@ const SimpleQRScanner = () => {
             <div
                 id={scannerContainerId}
                 style={{
-                    ...styles.scanner,
                     display: isScanning ? 'block' : 'none'
                 }}
             />
