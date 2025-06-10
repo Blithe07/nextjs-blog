@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Loading, Toast, Button } from 'react-vant';
-
+import { Button, Toast, Spin, Modal } from 'antd-mobile';
 interface QRScannerProps {
     scanTimeout?: number;
     onScanSuccess?: (decodedText: string) => void;
@@ -100,7 +99,10 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
             // 设置超时自动停止
             scanTimeoutRef.current = setTimeout(() => {
                 if (isScanning) {
-                    Toast.fail('扫描超时，请重试');
+                    Toast.show({
+                        content: '扫描超时，请重试',
+                        position: 'center',
+                    });
                     onScanError?.('扫描超时');
                     stopScan();
                 }
@@ -135,7 +137,10 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
         clearTimeout(scanTimeoutRef.current);
         onScanSuccess?.(decodedText);
         setScanResult(decodedText);
-        Toast.success('扫码成功');
+        Toast.show({
+            content: '扫码成功',
+            position: 'center',
+        });
         stopScan();
     };
 
@@ -153,15 +158,16 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
         let errorMessage = '扫码启动失败';
         if (err.name === 'NotAllowedError') {
             errorMessage = '摄像头权限被拒绝，请允许访问';
-            Toast.fail(errorMessage);
         } else if (err.name === 'NotFoundError') {
             errorMessage = '未找到摄像头设备';
-            Toast.fail(errorMessage);
         } else if (err.name === 'NotReadableError') {
             errorMessage = '摄像头被占用，请关闭其他使用摄像头的应用';
-            Toast.fail(errorMessage);
         }
 
+        Toast.show({
+            content: errorMessage,
+            position: 'center',
+        });
         onScanError?.(errorMessage);
     };
 
@@ -192,53 +198,67 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
     return (
         <div>
             <Button
-                type="primary"
-                size="large"
+                color='primary'
+                size='large'
                 onClick={() => {
                     showScanner();
                     startScan();
                 }}
+                style={{ margin: '16px auto' }}
             >
                 开始扫码
             </Button>
 
             {scanResult && (
-                <div style={{ marginTop: 16, padding: 12, background: '#f7f8fa', borderRadius: 8 }}>
-                    <div style={{ color: '#969799', fontSize: 14 }}>扫描结果</div>
-                    <div style={{ marginTop: 8, wordBreak: 'break-all' }}>{scanResult}</div>
+                <div style={{
+                    margin: '16px',
+                    padding: '12px',
+                    background: '#f5f5f5',
+                    borderRadius: '8px'
+                }}>
+                    <div style={{ color: '#999', fontSize: '14px' }}>扫描结果</div>
+                    <div style={{ marginTop: '8px', wordBreak: 'break-all' }}>{scanResult}</div>
                 </div>
             )}
 
-            {visible && (
-                <div style={styles.scannerOverlay}>
-                    {isLoading && (
-                        <div style={styles.loadingContainer}>
-                            <Loading type="spinner" color="#1989fa" size="24px">
-                                初始化摄像头...
-                            </Loading>
-                        </div>
-                    )}
+            <Modal
+                visible={visible}
+                content={
+                    <div style={styles.scannerOverlay}>
+                        {isLoading && (
+                            <div style={styles.loadingContainer}>
+                                <Spin
+                                    style={{ '--size': '24px', '--color': '#1677ff' }}
+                                >
+                                    初始化摄像头...
+                                </Spin>
+                            </div>
+                        )}
 
-                    <div style={styles.scannerMask}>
-                        <div style={styles.scannerFrame}>
-                            <div style={styles.cornerTL} />
-                            <div style={styles.cornerTR} />
-                            <div style={styles.cornerBL} />
-                            <div style={styles.cornerBR} />
+                        <div style={styles.scannerMask}>
+                            <div style={styles.scannerFrame}>
+                                <div style={styles.cornerTL} />
+                                <div style={styles.cornerTR} />
+                                <div style={styles.cornerBL} />
+                                <div style={styles.cornerBR} />
+                            </div>
+                            <div id={scannerContainerId} style={styles.scannerViewport} />
                         </div>
-                        <div id={scannerContainerId} style={styles.scannerViewport} />
                     </div>
-
-                    <Button
-                        plain
-                        type="danger"
-                        style={styles.closeButton}
-                        onClick={hideScanner}
-                    >
-                        关闭扫描
-                    </Button>
-                </div>
-            )}
+                }
+                closeOnAction
+                onClose={hideScanner}
+                actions={[
+                    {
+                        key: 'close',
+                        text: '关闭扫描',
+                        danger: true,
+                    }
+                ]}
+                bodyStyle={{
+                    padding: 0
+                }}
+            />
         </div>
     );
 });
@@ -246,13 +266,10 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
 // 样式
 const styles = {
     scannerOverlay: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        position: 'relative',
+        width: '100%',
+        height: '70vh',
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -289,8 +306,8 @@ const styles = {
         left: 0,
         width: '40px',
         height: '40px',
-        borderLeft: '3px solid #07c160',
-        borderTop: '3px solid #07c160'
+        borderLeft: '3px solid #1677ff',
+        borderTop: '3px solid #1677ff'
     } as React.CSSProperties,
     cornerTR: {
         position: 'absolute',
@@ -298,8 +315,8 @@ const styles = {
         right: 0,
         width: '40px',
         height: '40px',
-        borderRight: '3px solid #07c160',
-        borderTop: '3px solid #07c160'
+        borderRight: '3px solid #1677ff',
+        borderTop: '3px solid #1677ff'
     } as React.CSSProperties,
     cornerBL: {
         position: 'absolute',
@@ -307,8 +324,8 @@ const styles = {
         left: 0,
         width: '40px',
         height: '40px',
-        borderLeft: '3px solid #07c160',
-        borderBottom: '3px solid #07c160'
+        borderLeft: '3px solid #1677ff',
+        borderBottom: '3px solid #1677ff'
     } as React.CSSProperties,
     cornerBR: {
         position: 'absolute',
@@ -316,8 +333,8 @@ const styles = {
         right: 0,
         width: '40px',
         height: '40px',
-        borderRight: '3px solid #07c160',
-        borderBottom: '3px solid #07c160'
+        borderRight: '3px solid #1677ff',
+        borderBottom: '3px solid #1677ff'
     } as React.CSSProperties,
     scannerViewport: {
         width: '100%',
@@ -325,14 +342,6 @@ const styles = {
         position: 'relative',
         zIndex: 0,
         opacity: 0.9
-    } as React.CSSProperties,
-    closeButton: {
-        position: 'absolute',
-        bottom: '30px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 2,
-        width: '120px'
     } as React.CSSProperties
 };
 
