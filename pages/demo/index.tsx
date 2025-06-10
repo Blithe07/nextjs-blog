@@ -190,7 +190,7 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
             </div>
             {visible && <div style={{ ...styles.scannerOverlay, position: 'fixed' }}>
                 <div style={{ ...styles.scannerMask, position: 'relative' }}>
-                    {/* <div style={{ ...styles.scannerFrame, position: 'absolute' }}></div> */}
+                    <div style={{ ...styles.scannerFrame, position: 'absolute' }}></div>
                     <div id={scannerContainerId} style={{ ...styles.scannerViewport, position: 'relative' }}></div>
                 </div>
             </div>}
