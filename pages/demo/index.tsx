@@ -109,6 +109,7 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
                 { facingMode: 'environment' },
                 {
                     fps: 3, // 降低帧率
+                    qrbox: 250,
                     disableFlip: true // 禁用图像翻转提高性能
                 },
                 handleScanSuccess,
@@ -190,7 +191,9 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
             </div>
             {visible && <div style={{ ...styles.scannerOverlay, position: 'fixed' }}>
                 <div style={{ ...styles.scannerMask, position: 'relative' }}>
-                    {/* <div style={{ ...styles.scannerFrame, position: 'absolute' }}></div> */}
+                    <div style={{ ...styles.scannerFrame, position: 'absolute' }}>
+                        <div className='line'></div>
+                    </div>
                     <div id={scannerContainerId} style={{ ...styles.scannerViewport, position: 'relative' }}></div>
                 </div>
             </div>}
@@ -221,8 +224,8 @@ const styles = {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '200px',
-        height: '200px',
+        width: '250px',
+        height: '250px',
         border: '1px solid #000',
         boxShadow: '0 0 0 10000px rgba(0, 0, 0, 0.5)',
         zIndex: 1,
