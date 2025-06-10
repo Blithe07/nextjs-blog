@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 
-const SimpleQRScanner = () => {
+const OptimizedQRScanner = () => {
     const [scanResult, setScanResult] = useState('');
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState('');
@@ -9,14 +9,7 @@ const SimpleQRScanner = () => {
     const scannerRef = useRef<Html5Qrcode>();
     const scannerContainerId = 'qr-scanner-container';
     const scanTimeoutRef = useRef<NodeJS.Timeout>();
-
-    // 支持的扫码格式
-    // const formatsToSupport = [
-    //   Html5Qrcode.supportedFormats.QR_CODE,
-    //   Html5Qrcode.supportedFormats.EAN_13,
-    //   Html5Qrcode.supportedFormats.CODE_128,
-    //   Html5Qrcode.supportedFormats.UPC_A,
-    // ];
+    const lastScanTimeRef = useRef<number>(0);
 
     // 初始化扫码器
     const initScanner = () => {
@@ -24,7 +17,6 @@ const SimpleQRScanner = () => {
             scannerRef.current = new Html5Qrcode(
                 scannerContainerId,
                 {
-                    // formatsToSupport,
                     verbose: false,
                     experimentalFeatures: {
                         useBarCodeDetectorIfSupported: true
@@ -34,10 +26,31 @@ const SimpleQRScanner = () => {
         }
     };
 
+    // 清理扫码器
+    const cleanupScanner = async () => {
+        try {
+            if (scannerRef.current) {
+                if (scannerRef.current?.isScanning) {
+                    await scannerRef.current?.stop();
+                }
+                scannerRef.current?.clear();
+            }
+        } catch (err) {
+            console.error('Cleanup error:', err);
+        }
+    };
+
     // 开始扫码
     const startScan = async () => {
+        // 防止快速连续点击
+        const now = Date.now();
+        if (now - lastScanTimeRef.current < 1000) return;
+        lastScanTimeRef.current = now;
+
         try {
+            await cleanupScanner();
             initScanner();
+
             setIsScanning(true);
             setError('');
             setScanStatus('正在扫描...');
@@ -56,13 +69,16 @@ const SimpleQRScanner = () => {
                 }
             }, 30000);
 
+            // 添加延迟以改善视觉过渡
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             await scannerRef.current?.start(
                 { facingMode: 'environment' },
                 {
-                    fps: 5, // 降低帧率减少性能消耗
+                    fps: 3, // 进一步降低帧率
                     qrbox: 250,
-                    // rememberLastUsedCamera: true,
-                    aspectRatio: 1.0 // 保持方形视图
+                    aspectRatio: 1.0,
+                    disableFlip: true // 禁用图像翻转提高性能
                 },
                 handleScanSuccess,
                 handleScanError
@@ -73,19 +89,30 @@ const SimpleQRScanner = () => {
     };
 
     // 扫码成功回调
-    const handleScanSuccess = (decodedText: any, decodedResult: any) => {
+    const handleScanSuccess = (decodedText: string, decodedResult: any) => {
+        // 添加成功扫描后的延迟，防止快速连续触发
+        const now = Date.now();
+        if (now - lastScanTimeRef.current < 1000) return;
+        lastScanTimeRef.current = now;
+
         clearTimeout(scanTimeoutRef.current);
         setScanResult(decodedText);
         setScanStatus(`成功扫描到: ${decodedResult.result.format}`);
-        stopScan();
-        
+
+        // 添加成功反馈动画
+        setScanStatus(prev => {
+            setTimeout(() => {
+                setScanStatus('扫描成功!');
+                setTimeout(() => stopScan(), 800);
+            }, 300);
+            return '正在处理...';
+        });
     };
 
-    // 扫码错误回调 - 修改为不停止扫描
-    const handleScanError = (errorMsg: any) => {
+    // 扫码错误回调
+    const handleScanError = (errorMsg: string) => {
         console.log('Scan error:', errorMsg);
         setScanStatus('对准二维码/条形码...');
-        // 不停止扫描，继续尝试
     };
 
     // 启动错误处理
@@ -109,10 +136,7 @@ const SimpleQRScanner = () => {
     // 停止扫码
     const stopScan = async () => {
         try {
-            if (scannerRef.current && isScanning) {
-                await scannerRef.current.stop();
-                await scannerRef.current.clear();
-            }
+            await cleanupScanner();
         } catch (err) {
             console.error('Stop error:', err);
         } finally {
@@ -130,24 +154,35 @@ const SimpleQRScanner = () => {
             }
         };
     }, []);
+
     return (
         <div style={styles.container}>
-            <h1>简易扫码器</h1>
+            <h1 style={styles.title}>优化扫码器</h1>
 
-            {/* 扫码结果显示 */}
-            <div style={styles.resultContainer}>
-                <h3>扫描结果：</h3>
-                <div
-                >
-                    {scanResult || '暂无结果'}
-                </div>
+            {/* 状态显示 */}
+            <div style={styles.statusContainer}>
+                <div style={styles.statusText}>{scanStatus}</div>
             </div>
 
-            {/* 扫码容器 */}
+            {/* 扫码结果显示 */}
+            {scanResult && (
+                <div style={styles.resultContainer}>
+                    <h3>扫描结果：</h3>
+                    <div style={styles.resultText}>
+                        {scanResult}
+                    </div>
+                </div>
+            )}
+
+            {/* 扫码容器 - 添加过渡效果 */}
             <div
                 id={scannerContainerId}
                 style={{
-                    display: isScanning ? 'block' : 'none'
+                    ...styles.scanner,
+                    position: 'relative',
+                    display: isScanning ? 'block' : 'none',
+                    opacity: isScanning ? 1 : 0,
+                    transition: 'opacity 0.3s ease-in-out'
                 }}
             />
 
@@ -156,7 +191,8 @@ const SimpleQRScanner = () => {
                 <button
                     style={{
                         ...styles.button,
-                        ...(isScanning ? styles.buttonDisabled : styles.buttonPrimary)
+                        ...(isScanning ? styles.buttonDisabled : styles.buttonPrimary),
+                        transition: 'all 0.3s ease'
                     }}
                     onClick={startScan}
                     disabled={isScanning}
@@ -168,7 +204,8 @@ const SimpleQRScanner = () => {
                     <button
                         style={{
                             ...styles.button,
-                            ...styles.buttonDanger
+                            ...styles.buttonDanger,
+                            transition: 'all 0.3s ease'
                         }}
                         onClick={stopScan}
                     >
@@ -179,7 +216,10 @@ const SimpleQRScanner = () => {
 
             {/* 错误提示 */}
             {error && (
-                <div style={styles.errorText}>
+                <div style={{
+                    ...styles.errorText,
+                    animation: 'fadeIn 0.5s ease'
+                }}>
                     {error}
                     {error.includes('权限') && (
                         <button
@@ -195,7 +235,7 @@ const SimpleQRScanner = () => {
     );
 };
 
-// 内联样式
+// 样式定义
 const styles = {
     container: {
         maxWidth: '500px',
@@ -204,31 +244,46 @@ const styles = {
         fontFamily: 'Arial, sans-serif'
     },
     title: {
-        textAlign: 'center',
-        color: '#333'
+        'text-align': 'center',
+        color: '#333',
+        marginBottom: '20px'
+    },
+    statusContainer: {
+        margin: '10px 0',
+        padding: '10px',
+        background: '#f0f8ff',
+        borderRadius: '5px',
+        'text-align': 'center',
+        transition: 'all 0.3s ease'
+    },
+    statusText: {
+        color: '#1e90ff',
+        fontWeight: 'bold',
+        transition: 'all 0.3s ease'
     },
     resultContainer: {
         margin: '20px 0',
         padding: '15px',
         background: '#f5f5f5',
-        borderRadius: '8px'
+        borderRadius: '8px',
+        transition: 'all 0.3s ease'
     },
     resultText: {
         padding: '10px',
         background: 'white',
         borderRadius: '4px',
-        wordBreak: 'break-all',
-        cursor: 'pointer',
-        minHeight: '20px',
-        border: '1px solid #ddd'
+        'word-break': 'break-word',
+        border: '1px solid #ddd',
+        transition: 'all 0.3s ease'
     },
     scanner: {
         width: '100%',
         height: '300px',
         margin: '20px 0',
         position: 'relative',
-        border: '2px solid #07c160',
-        borderRadius: '8px'
+        border: '2px solid #1e90ff',
+        borderRadius: '8px',
+        overflow: 'hidden'
     },
     buttonContainer: {
         display: 'flex',
@@ -241,26 +296,31 @@ const styles = {
         borderRadius: '6px',
         border: 'none',
         fontSize: '16px',
-        cursor: 'pointer',
-        transition: 'background 0.3s'
+        cursor: 'pointer'
     },
     buttonPrimary: {
-        background: '#07c160',
-        color: 'white'
+        background: '#1e90ff',
+        color: 'white',
+        ':hover': {
+            background: '#187bcd'
+        }
     },
     buttonDanger: {
-        background: '#ff4d4f',
-        color: 'white'
+        background: '#ff6b6b',
+        color: 'white',
+        ':hover': {
+            background: '#fa5252'
+        }
     },
     buttonDisabled: {
         background: '#ccc',
         cursor: 'not-allowed'
     },
     errorText: {
-        color: '#ff4d4f',
+        color: '#ff4757',
         marginTop: '15px',
         padding: '10px',
-        background: '#fff2f0',
+        background: '#ffecec',
         borderRadius: '4px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -268,12 +328,12 @@ const styles = {
     },
     settingsButton: {
         background: 'none',
-        border: '1px solid #ff4d4f',
-        color: '#ff4d4f',
+        border: '1px solid #ff4757',
+        color: '#ff4757',
         borderRadius: '4px',
         padding: '5px 10px',
         cursor: 'pointer'
     }
 };
 
-export default SimpleQRScanner;
+export default OptimizedQRScanner;
