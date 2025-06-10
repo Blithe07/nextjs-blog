@@ -65,7 +65,7 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
     const cleanupScanner = async () => {
         try {
             if (scannerRef.current) {
-                if (scannerRef.current.isScanning()) {
+                if (scannerRef.current.isScanning) {
                     await scannerRef.current.stop();
                 }
                 scannerRef.current.clear();
