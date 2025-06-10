@@ -186,10 +186,10 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
                 <button>开启扫描</button>
                 <div>{scanResult}</div>
             </div>
-            <div className="scanner-overlay">
-                <div className="scanner-mask">
-                    <div className="scanner-frame"></div>
-                    <div id={scannerContainerId} className="scanner-viewport"></div>
+            <div style={{ ...styles.scannerOverlay, position: 'fixed' }}>
+                <div style={{ ...styles.scannerMask, position: 'relative' }}>
+                    <div style={{ ...styles.scannerFrame, position: 'absolute' }}></div>
+                    <div id={scannerContainerId} style={{ ...styles.scannerViewport, position: 'relative' }}></div>
                 </div>
             </div>
         </div>
@@ -197,51 +197,41 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
 });
 
 // 样式
-const styles = `
-  .scanner-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .scanner-mask {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-  
-  .scanner-frame {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
-    border: 1px solid #000;
-    box-shadow: 0 0 0 10000px rgba(0, 0, 0, 0.5);
-    z-index: 1;
-    pointer-events: none;
-  }
-  
-  .scanner-viewport {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    z-index: 0;
-    opacity: 0.9;
-  }
-`;
-
-// 添加样式到head
-const styleElement = document.createElement('style');
-styleElement.innerHTML = styles;
-document.head.appendChild(styleElement);
+const styles = {
+    scannerOverlay: {
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#ccc',
+        zIndex: 9999,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scannerMask: {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+    },
+    scannerFrame: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '200px',
+        height: '200px',
+        border: '1px solid #000',
+        boxShadow: '0 0 0 10000px rgba(0, 0, 0, 0.5)',
+        zIndex: 1,
+    },
+    scannerViewport: {
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        zIndex: 0,
+        opacity: 0.9,
+    },
+};
 
 export default QRScanner;
