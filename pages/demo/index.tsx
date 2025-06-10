@@ -78,6 +78,7 @@ const SimpleQRScanner = () => {
         setScanResult(decodedText);
         setScanStatus(`成功扫描到: ${decodedResult.result.format}`);
         stopScan();
+        
     };
 
     // 扫码错误回调 - 修改为不停止扫描
@@ -110,6 +111,7 @@ const SimpleQRScanner = () => {
         try {
             if (scannerRef.current && isScanning) {
                 await scannerRef.current.stop();
+                await scannerRef.current.clear();
             }
         } catch (err) {
             console.error('Stop error:', err);
