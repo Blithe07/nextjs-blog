@@ -1,0 +1,29 @@
+diff a/pages/demo/index.tsx b/pages/demo/index.tsx	(rejected hunks)
+@@ -178,20 +178,21 @@
+         };
+     }, []);
+ 
+-    if (!visible) return null;
+-
+     return (
+         <div>
+             <div>
+-                <button>开启扫描</button>
+-                <div>{scanResult}</div>
++                <button onClick={() => {
++                    showScanner()
++                    startScan()
++                }}>开启扫描</button>
++                <div>{scanResult || 'no result'}</div>
+             </div>
+-            <div style={{ ...styles.scannerOverlay, position: 'fixed' }}>
++            {visible && <div style={{ ...styles.scannerOverlay, position: 'fixed' }}>
+                 <div style={{ ...styles.scannerMask, position: 'relative' }}>
+                     <div style={{ ...styles.scannerFrame, position: 'absolute' }}></div>
+                     <div id={scannerContainerId} style={{ ...styles.scannerViewport, position: 'relative' }}></div>
+                 </div>
+-            </div>
++            </div>}
+         </div>
+     );
+ });
