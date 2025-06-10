@@ -1,15 +1,50 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 
-const OptimizedQRScanner = () => {
-    const [scanResult, setScanResult] = useState('');
+interface QRScannerProps {
+    scanTimeout?: number;
+    onScanSuccess?: (decodedText: string) => void;
+    onScanError?: (error: string | Error) => void;
+}
+
+export interface QRScannerRef {
+    showScanner: () => void;
+    hideScanner: () => void;
+    startScan: () => void;
+    stopScan: () => void;
+}
+
+const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
+    scanTimeout = 30000,
+    onScanSuccess,
+    onScanError
+}, ref) => {
+    const [visible, setVisible] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
-    const [error, setError] = useState('');
-    const [scanStatus, setScanStatus] = useState('等待扫描...');
-    const scannerRef = useRef<Html5Qrcode>();
-    const scannerContainerId = 'qr-scanner-container';
+    const scannerRef = useRef<Html5Qrcode | null>(null);
     const scanTimeoutRef = useRef<NodeJS.Timeout>();
-    const lastScanTimeRef = useRef<number>(0);
+    const lastScanTimeRef = useRef(0);
+    const scannerContainerId = 'qr-scanner-container';
+    const [scanResult, setScanResult] = useState('');
+
+    // 暴露方法给父组件
+    useImperativeHandle(ref, () => ({
+        showScanner,
+        hideScanner,
+        startScan,
+        stopScan
+    }));
+
+    // 显示扫码遮罩
+    const showScanner = () => {
+        setVisible(true);
+    };
+
+    // 隐藏扫码遮罩
+    const hideScanner = () => {
+        setVisible(false);
+        stopScan();
+    };
 
     // 初始化扫码器
     const initScanner = () => {
@@ -30,13 +65,14 @@ const OptimizedQRScanner = () => {
     const cleanupScanner = async () => {
         try {
             if (scannerRef.current) {
-                if (scannerRef.current?.isScanning) {
-                    await scannerRef.current?.stop();
+                if (scannerRef.current.isScanning()) {
+                    await scannerRef.current.stop();
                 }
-                scannerRef.current?.clear();
+                scannerRef.current.clear();
             }
         } catch (err) {
             console.error('Cleanup error:', err);
+            onScanError?.(err as Error);
         }
     };
 
@@ -52,22 +88,19 @@ const OptimizedQRScanner = () => {
             initScanner();
 
             setIsScanning(true);
-            setError('');
-            setScanStatus('正在扫描...');
-            setScanResult('');
 
             // 清除之前的超时
             if (scanTimeoutRef.current) {
                 clearTimeout(scanTimeoutRef.current);
             }
 
-            // 设置超时（30秒无结果自动停止）
+            // 设置超时自动停止
             scanTimeoutRef.current = setTimeout(() => {
                 if (isScanning) {
-                    setScanStatus('未检测到二维码/条形码');
+                    onScanError?.('扫描超时');
                     stopScan();
                 }
-            }, 30000);
+            }, scanTimeout);
 
             // 添加延迟以改善视觉过渡
             await new Promise(resolve => setTimeout(resolve, 300));
@@ -75,15 +108,14 @@ const OptimizedQRScanner = () => {
             await scannerRef.current?.start(
                 { facingMode: 'environment' },
                 {
-                    fps: 3, // 进一步降低帧率
-                    // qrbox: 250,
+                    fps: 3, // 降低帧率
                     disableFlip: true // 禁用图像翻转提高性能
                 },
                 handleScanSuccess,
                 handleScanError
             );
         } catch (err) {
-            handleStartError(err);
+            handleStartError(err as Error);
         }
     };
 
@@ -95,27 +127,19 @@ const OptimizedQRScanner = () => {
         lastScanTimeRef.current = now;
 
         clearTimeout(scanTimeoutRef.current);
-        setScanResult(decodedText);
-        setScanStatus(`成功扫描到: ${decodedResult.result.format}`);
-
-        // 添加成功反馈动画
-        setScanStatus(prev => {
-            setTimeout(() => {
-                setScanStatus('扫描成功!');
-                setTimeout(() => stopScan(), 800);
-            }, 300);
-            return '正在处理...';
-        });
+        onScanSuccess?.(decodedText);
+        setScanResult(decodedText)
+        stopScan();
     };
 
     // 扫码错误回调
     const handleScanError = (errorMsg: string) => {
         console.log('Scan error:', errorMsg);
-        setScanStatus('对准二维码/条形码...');
+        onScanError?.(errorMsg);
     };
 
     // 启动错误处理
-    const handleStartError = (err: any) => {
+    const handleStartError = (err: Error) => {
         console.error('Start error:', err);
         setIsScanning(false);
 
@@ -128,8 +152,7 @@ const OptimizedQRScanner = () => {
             errorMessage = '摄像头被占用，请关闭其他使用摄像头的应用';
         }
 
-        setError(errorMessage);
-        setScanStatus(errorMessage);
+        onScanError?.(errorMessage);
     };
 
     // 停止扫码
@@ -138,6 +161,7 @@ const OptimizedQRScanner = () => {
             await cleanupScanner();
         } catch (err) {
             console.error('Stop error:', err);
+            onScanError?.(err as Error);
         } finally {
             setIsScanning(false);
             clearTimeout(scanTimeoutRef.current);
@@ -154,185 +178,70 @@ const OptimizedQRScanner = () => {
         };
     }, []);
 
+    if (!visible) return null;
+
     return (
-        <div style={styles.container}>
-            <h1 style={styles.title}>优化扫码器</h1>
-
-            {/* 状态显示 */}
-            <div style={styles.statusContainer}>
-                <div style={styles.statusText}>{scanStatus}</div>
+        <div>
+            <div>
+                <button>开启扫描</button>
+                <div>{scanResult}</div>
             </div>
-
-            {/* 扫码结果显示 */}
-            {scanResult && (
-                <div style={styles.resultContainer}>
-                    <h3>扫描结果：</h3>
-                    <div style={styles.resultText}>
-                        {scanResult}
-                    </div>
+            <div className="scanner-overlay">
+                <div className="scanner-mask">
+                    <div className="scanner-frame"></div>
+                    <div id={scannerContainerId} className="scanner-viewport"></div>
                 </div>
-            )}
-
-            {/* 扫码容器 - 添加过渡效果 */}
-            <div
-                id={scannerContainerId}
-                style={{
-                    ...styles.scanner,
-                    position: 'relative',
-                    display: isScanning ? 'block' : 'none',
-                    opacity: isScanning ? 1 : 0,
-                    transition: 'opacity 0.3s ease-in-out'
-                }}
-            />
-
-            {/* 操作按钮 */}
-            <div style={styles.buttonContainer}>
-                <button
-                    style={{
-                        ...styles.button,
-                        ...(isScanning ? styles.buttonDisabled : styles.buttonPrimary),
-                        transition: 'all 0.3s ease'
-                    }}
-                    onClick={startScan}
-                    disabled={isScanning}
-                >
-                    {isScanning ? '扫描中...' : '开始扫码'}
-                </button>
-
-                {isScanning && (
-                    <button
-                        style={{
-                            ...styles.button,
-                            ...styles.buttonDanger,
-                            transition: 'all 0.3s ease'
-                        }}
-                        onClick={stopScan}
-                    >
-                        停止
-                    </button>
-                )}
             </div>
-
-            {/* 错误提示 */}
-            {error && (
-                <div style={{
-                    ...styles.errorText,
-                    animation: 'fadeIn 0.5s ease'
-                }}>
-                    {error}
-                    {error.includes('权限') && (
-                        <button
-                            style={styles.settingsButton}
-                            onClick={() => window.location.href = 'app-settings:'}
-                        >
-                            去设置
-                        </button>
-                    )}
-                </div>
-            )}
         </div>
     );
-};
+});
 
-// 样式定义
-const styles = {
-    container: {
-        maxWidth: '500px',
-        margin: '0 auto',
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif'
-    },
-    title: {
-        'text-align': 'center',
-        color: '#333',
-        marginBottom: '20px'
-    },
-    statusContainer: {
-        margin: '10px 0',
-        padding: '10px',
-        background: '#f0f8ff',
-        borderRadius: '5px',
-        'text-align': 'center',
-        transition: 'all 0.3s ease'
-    },
-    statusText: {
-        color: '#1e90ff',
-        fontWeight: 'bold',
-        transition: 'all 0.3s ease'
-    },
-    resultContainer: {
-        margin: '20px 0',
-        padding: '15px',
-        background: '#f5f5f5',
-        borderRadius: '8px',
-        transition: 'all 0.3s ease'
-    },
-    resultText: {
-        padding: '10px',
-        background: 'white',
-        borderRadius: '4px',
-        'word-break': 'break-word',
-        border: '1px solid #ddd',
-        transition: 'all 0.3s ease'
-    },
-    scanner: {
-        width: '100%',
-        height: '300px',
-        margin: '20px 0',
-        position: 'relative',
-        border: '2px solid #1e90ff',
-        borderRadius: '8px',
-        overflow: 'hidden'
-    },
-    buttonContainer: {
-        display: 'flex',
-        gap: '10px',
-        marginTop: '20px'
-    },
-    button: {
-        flex: 1,
-        padding: '12px',
-        borderRadius: '6px',
-        border: 'none',
-        fontSize: '16px',
-        cursor: 'pointer'
-    },
-    buttonPrimary: {
-        background: '#1e90ff',
-        color: 'white',
-        ':hover': {
-            background: '#187bcd'
-        }
-    },
-    buttonDanger: {
-        background: '#ff6b6b',
-        color: 'white',
-        ':hover': {
-            background: '#fa5252'
-        }
-    },
-    buttonDisabled: {
-        background: '#ccc',
-        cursor: 'not-allowed'
-    },
-    errorText: {
-        color: '#ff4757',
-        marginTop: '15px',
-        padding: '10px',
-        background: '#ffecec',
-        borderRadius: '4px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    settingsButton: {
-        background: 'none',
-        border: '1px solid #ff4757',
-        color: '#ff4757',
-        borderRadius: '4px',
-        padding: '5px 10px',
-        cursor: 'pointer'
-    }
-};
+// 样式
+const styles = `
+  .scanner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .scanner-mask {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .scanner-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border: 1px solid #000;
+    box-shadow: 0 0 0 10000px rgba(0, 0, 0, 0.5);
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  .scanner-viewport {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 0;
+    opacity: 0.9;
+  }
+`;
 
-export default OptimizedQRScanner;
+// 添加样式到head
+const styleElement = document.createElement('style');
+styleElement.innerHTML = styles;
+document.head.appendChild(styleElement);
+
+export default QRScanner;
