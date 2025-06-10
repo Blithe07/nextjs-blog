@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Button, Toast, Spin, Modal } from 'antd-mobile';
+import { Button, Toast, SpinLoading, Modal } from 'antd-mobile';
 interface QRScannerProps {
     scanTimeout?: number;
     onScanSuccess?: (decodedText: string) => void;
@@ -227,11 +227,10 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
                     <div style={styles.scannerOverlay}>
                         {isLoading && (
                             <div style={styles.loadingContainer}>
-                                <Spin
+                                <SpinLoading
                                     style={{ '--size': '24px', '--color': '#1677ff' }}
                                 >
-                                    初始化摄像头...
-                                </Spin>
+                                </SpinLoading >
                             </div>
                         )}
 
