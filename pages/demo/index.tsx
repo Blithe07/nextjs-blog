@@ -165,6 +165,7 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
         } finally {
             setIsScanning(false);
             clearTimeout(scanTimeoutRef.current);
+            setVisible(false)
         }
     };
 
