@@ -76,7 +76,7 @@ const OptimizedQRScanner = () => {
                 { facingMode: 'environment' },
                 {
                     fps: 3, // 进一步降低帧率
-                    qrbox: 250,
+                    // qrbox: 250,
                     disableFlip: true // 禁用图像翻转提高性能
                 },
                 handleScanSuccess,
