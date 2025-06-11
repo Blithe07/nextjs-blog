@@ -108,9 +108,13 @@ const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({
             await scannerRef.current?.start(
                 { facingMode: 'environment' },
                 {
-                    fps: 20, // 降低帧率
+                    fps: 12, // 降低帧率
+                    videoConstraints: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
                     // qrbox: { width: 300, height: 300 },
-                    // aspectRatio: 1.777,
+                    aspectRatio: 1.777,
                     disableFlip: true, // 禁用图像翻转提高性能
                 },
                 handleScanSuccess,
